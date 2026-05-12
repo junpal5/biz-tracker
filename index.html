@@ -244,8 +244,9 @@
       margin-top: 12px;
       display: none;
     }
-    .alert-error { background: #fce4ec; color: #b71c1c; border: 1px solid #ef9a9a; }
-    .alert-info  { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+    .alert-error   { background: #fce4ec; color: #b71c1c; border: 1px solid #ef9a9a; }
+    .alert-warning { background: #fff8e1; color: #e65100; border: 1px solid #ffcc02; }
+    .alert-info    { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
 
     .max-rows-note {
       font-size: 0.75rem;
@@ -303,6 +304,7 @@
         <p class="hint">하이픈(-)이 포함되어 있어도 자동으로 제거됩니다.</p>
       </div>
 
+      <div class="alert alert-warning" id="colWarnAlert" style="display:none;"></div>
       <div class="alert alert-error" id="fileAlert"></div>
     </div>
   </div>
@@ -373,6 +375,7 @@ const fileNameEl   = document.getElementById('fileName');
 const colSelectWrap= document.getElementById('colSelectWrap');
 const colSelect    = document.getElementById('colSelect');
 const fileAlert    = document.getElementById('fileAlert');
+const colWarnAlert = document.getElementById('colWarnAlert');
 const runBtn       = document.getElementById('runBtn');
 const progressWrap = document.getElementById('progressWrap');
 const progressText = document.getElementById('progressText');
@@ -457,12 +460,12 @@ function handleFile(file) {
       sheetData = raw;
       headers   = Object.keys(raw[0]);
 
-      /* Populate column dropdown */
+      /* Populate column dropdown — A~G열(최대 7개)만 표시 */
       colSelect.innerHTML = '<option value="">-- 열을 선택하세요 --</option>';
-      headers.forEach(h => {
+      headers.slice(0, 7).forEach((h, idx) => {
         const opt = document.createElement('option');
         opt.value = h;
-        opt.textContent = h;
+        opt.textContent = `${String.fromCharCode(65 + idx)}열: ${h}`;
         /* Auto-select if column name looks like a business registration number */
         if (/사업자|등록번호|b_no|biz|bizno/i.test(h)) opt.selected = true;
         colSelect.appendChild(opt);
@@ -479,7 +482,33 @@ function handleFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
-colSelect.addEventListener('change', checkRunReady);
+colSelect.addEventListener('change', () => {
+  checkRunReady();
+  hideAlert(colWarnAlert);
+
+  const col = colSelect.value;
+  if (!col || sheetData.length === 0) return;
+
+  /* 숫자·하이픈 이외 문자가 남는 행 번호 수집 (행 번호는 헤더 제외 1-based) */
+  const badRows = [];
+  sheetData.forEach((row, idx) => {
+    const val = String(row[col] ?? '');
+    const stripped = val.replace(/-/g, '');          // 하이픈만 먼저 제거
+    if (stripped !== '' && /[^0-9]/.test(stripped)) { // 숫자 외 문자가 남으면
+      badRows.push(idx + 2);                          // 엑셀 2행부터(헤더=1행)
+    }
+  });
+
+  if (badRows.length > 0) {
+    const rowList = badRows.length > 20
+      ? badRows.slice(0, 20).join(', ') + ` 외 ${badRows.length - 20}건`
+      : badRows.join(', ');
+    showAlert(colWarnAlert,
+      `⚠️ 선택한 열에 숫자가 아닌 문자(특수기호 등)가 포함된 행이 있습니다. 파일을 다시 확인해 주세요.\n` +
+      `문제 행(엑셀 행 번호): ${rowList}`
+    );
+  }
+});
 
 /* ── Run ── */
 runBtn.addEventListener('click', runQuery);
@@ -506,13 +535,61 @@ async function runQuery() {
     return;
   }
 
+  const API = 'https://api.odcloud.kr/api/nts-businessman/v1/status';
+
+  /* ── 사전 검증: 첫 번째 데이터 1건으로 API KEY·시스템 정상 여부 확인 ── */
+  runBtn.disabled = true;
+  showAlert(runInfo, '⏳ API 연결 및 인증키 확인 중...');
+  try {
+    const testBody = { b_no: [validRows[0].__b_no] };
+    const testResp = await fetch(`${API}?serviceKey=${encodeURIComponent(serviceKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testBody)
+    });
+    if (!testResp.ok) {
+      const text = await testResp.text();
+      let msg = `API 오류 (HTTP ${testResp.status})`;
+      try {
+        const errJson = JSON.parse(text);
+        if (errJson.status_code) msg = `API 오류: ${errJson.status_code} — ${errJson.request_msg || ''}`;
+      } catch {}
+      hideAlert(runInfo);
+      showAlert(runAlert, `⛔ 사전 검증 실패 — ${msg}\nAPI KEY를 다시 확인해 주세요.`);
+      runBtn.disabled = false;
+      checkRunReady();
+      return;
+    }
+    const testJson = await testResp.json();
+    if (testJson.status_code && testJson.status_code !== 'OK') {
+      hideAlert(runInfo);
+      showAlert(runAlert,
+        `⛔ 사전 검증 실패 — ${testJson.status_code}: ${testJson.request_msg || ''}\nAPI KEY를 다시 확인해 주세요.`
+      );
+      runBtn.disabled = false;
+      checkRunReady();
+      return;
+    }
+  } catch (prefErr) {
+    hideAlert(runInfo);
+    const isCors = prefErr instanceof TypeError;
+    showAlert(runAlert,
+      isCors
+        ? '⛔ 사전 검증 실패 — CORS 오류: 브라우저가 api.odcloud.kr 직접 호출을 차단했습니다.\n→ Netlify Functions 프록시 사용을 권장합니다.'
+        : `⛔ 사전 검증 실패 — ${prefErr.message}`
+    );
+    runBtn.disabled = false;
+    checkRunReady();
+    return;
+  }
+  hideAlert(runInfo);
+
   /* Show progress */
   progressWrap.style.display = 'block';
   runBtn.disabled = true;
   setProgress(0, validRows.length);
 
   const BATCH = 100;
-  const API   = 'https://api.odcloud.kr/api/nts-businessman/v1/status';
   const statusMap = {};
   let corsError = false;
 
