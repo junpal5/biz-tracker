@@ -1,6 +1,14 @@
 {
-  "currentVersion": "2.0.0",
+  "currentVersion": "2.0.1",
   "history": [
+    {
+      "version": "2.0.1",
+      "date": "2026-05-12T09:20:41.000Z",
+      "changes": [
+        "헤더 우측 하단에 Contributor(LJH · 한국갤럽조사연구소) 표기 추가",
+        "CLAUDE.md 축약 — 워크플로우 강조 및 불필요한 설명 제거"
+      ]
+    },
     {
       "version": "2.0.0",
       "date": "2026-05-12T10:00:00.000Z",
