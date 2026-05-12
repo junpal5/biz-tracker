@@ -1405,7 +1405,6 @@ function addDailyUsage(count) {
 
 function renderDailyUsage() {
   const used   = getDailyUsage();
-  if (used === 0) return;
   const remain = Math.max(0, DAILY_LIMIT - used);
   const pct    = Math.min(100, (used / DAILY_LIMIT) * 100);
   const el     = document.getElementById('dailyUsage');
