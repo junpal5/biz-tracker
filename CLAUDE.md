@@ -2,7 +2,7 @@
 
 ## 개요
 - **앱**: 사업자 휴·폐업 조회 (단일 파일 `index.html`, 약 1000줄)
-- **현재 버전**: `version-history.json`의 `currentVersion` 참조 (현재 v2.0.0)
+- **현재 버전**: `version-history.json`의 `currentVersion` 참조 (현재 v2.0.1)
 - **배포**: GitHub Pages — `https://junpal5.github.io/biz-tracker/`
 - **대상 사용자**: 비개발자 — 한국어로 안내
 

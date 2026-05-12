@@ -478,6 +478,24 @@
     }
     .btn-download:hover { background: #2a2a2a; }
 
+    /* ── Sample download ── */
+    .btn-sample {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px var(--space-md);
+      background: transparent;
+      color: var(--color-charcoal);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--rounded-full);
+      font-size: 0.75rem;
+      font-weight: 500;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-sample:hover { border-color: var(--color-charcoal); color: var(--color-ink); }
+
     /* ── Stats pills ── */
     .stats { display: flex; gap: var(--space-xs); flex-wrap: wrap; margin-bottom: var(--space-md); }
     .stat-pill {
@@ -566,7 +584,7 @@
 <!-- ── Version Chip ── -->
 <button class="ver-chip" id="verChip" onclick="openVerModal()">
   <span class="ver-chip-dot"></span>
-  v2.0.1
+  v2.1.0
 </button>
 
 <!-- ── Version Modal ── -->
@@ -584,7 +602,7 @@
 <div class="header">
   <h1>사업자 휴·폐업 조회</h1>
   <p>국세청 사업자등록정보 상태조회 서비스 (공공데이터포털)</p>
-  <div class="header-contributor">Contributor: LJH<br>한국갤럽조사연구소</div>
+  <div class="header-contributor">Contributor: LJH, GMJ, JHJ</div>
 </div>
 
 <div class="container">
@@ -612,7 +630,10 @@
       <h2>엑셀 파일 업로드 및 열 선택</h2>
     </div>
     <div class="card-body">
-      <label>XLSX 파일 선택</label>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-xs);">
+        <label style="margin-bottom:0;">XLSX 파일 선택</label>
+        <button class="btn-sample" onclick="downloadSample()">📥 양식 예시 다운로드</button>
+      </div>
       <div class="file-area" id="fileArea">
         <input type="file" id="fileInput" accept=".xlsx,.xls" />
         <div class="file-icon">📂</div>
@@ -692,6 +713,15 @@
 const CURRENT_VERSION = '2.0.1';
 
 const VERSION_HISTORY = [
+  {
+    version: '2.1.0',
+    date: '2026-05-12',
+    changes: [
+      '조회 실행 중 남은 예상 시간 실시간 표시',
+      '엑셀 업로드 영역에 양식 예시 다운로드 버튼 추가 (예시 10건)',
+      'Contributor LJH, GMJ, JHJ로 변경',
+    ]
+  },
   {
     version: '2.0.1',
     date: '2026-05-12',
@@ -811,11 +841,44 @@ function checkRunReady() {
   runBtn.disabled = !ok;
 }
 
+let batchStartTime = 0;
+
 function setProgress(done, total) {
   const pct = total > 0 ? Math.round(done / total * 100) : 0;
   progressFill.style.width = pct + '%';
   progressPct.textContent  = pct + '%';
-  progressText.textContent = `처리 중... (${done} / ${total} 건)`;
+  let etaText = '';
+  if (done > 0 && done < total && batchStartTime > 0) {
+    const elapsed = Date.now() - batchStartTime;
+    const remainSec = Math.round((elapsed / done) * (total - done) / 1000);
+    if (remainSec >= 60) {
+      const m = Math.floor(remainSec / 60);
+      const s = remainSec % 60;
+      etaText = ` · 약 ${m}분${s > 0 ? ' ' + s + '초' : ''} 남음`;
+    } else {
+      etaText = ` · 약 ${remainSec}초 남음`;
+    }
+  }
+  progressText.textContent = `처리 중... (${done} / ${total} 건)${etaText}`;
+}
+
+function downloadSample() {
+  const rows = [
+    { '사업자등록번호': '1018141234', '회사명': '(주)한국테크놀로지' },
+    { '사업자등록번호': '2148273456', '회사명': '삼성산업(주)' },
+    { '사업자등록번호': '3017584567', '회사명': '(주)대한물산' },
+    { '사업자등록번호': '1348295678', '회사명': '현대산업개발' },
+    { '사업자등록번호': '5129306789', '회사명': '(주)서울유통' },
+    { '사업자등록번호': '2370417890', '회사명': 'LG솔루션(주)' },
+    { '사업자등록번호': '1281528901', '회사명': '(주)부산건설' },
+    { '사업자등록번호': '3192639012', '회사명': '대우해운상사' },
+    { '사업자등록번호': '4203740123', '회사명': '(주)인천무역' },
+    { '사업자등록번호': '5314851234', '회사명': '롯데상사(주)' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '사업자조회');
+  XLSX.writeFile(wb, '사업자조회_양식_예시.xlsx');
 }
 
 function normalizeRegNo(val) {
@@ -1018,6 +1081,7 @@ async function runQuery() {
   hideAlert(runInfo);
 
   /* Batch processing */
+  batchStartTime = Date.now();
   progressWrap.style.display = 'block';
   setProgress(0, validRows.length);
 

@@ -1,6 +1,15 @@
 {
-  "currentVersion": "2.0.1",
+  "currentVersion": "2.1.0",
   "history": [
+    {
+      "version": "2.1.0",
+      "date": "2026-05-12T09:31:49.000Z",
+      "changes": [
+        "조회 실행 중 남은 예상 시간 실시간 표시",
+        "엑셀 업로드 영역에 양식 예시 다운로드 버튼 추가 (예시 10건)",
+        "Contributor LJH, GMJ, JHJ로 변경"
+      ]
+    },
     {
       "version": "2.0.1",
       "date": "2026-05-12T09:20:41.000Z",
