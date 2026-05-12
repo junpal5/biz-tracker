@@ -4,168 +4,351 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>사업자 휴·폐업 조회</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
+    /* ── MiniMax Design Tokens ── */
+    :root {
+      --color-primary:       #0A0A0A;
+      --color-on-primary:    #FFFFFF;
+      --color-canvas:        #FFFFFF;
+      --color-surface:       #F5F5F5;
+      --color-surface-soft:  #FAFAFA;
+      --color-hairline:      #E5E5E5;
+      --color-hairline-soft: #F0F0F0;
+      --color-ink:           #1A1A1A;
+      --color-charcoal:      #404040;
+      --color-steel:         #888888;
+      --color-stone:         #A0A0A0;
+      --color-muted:         #C0C0C0;
+
+      --color-brand-coral:     #FF4B2B;
+      --color-brand-blue:      #2563EB;
+      --color-brand-blue-deep: #1D4ED8;
+      --color-brand-blue-200:  #BFDBFE;
+      --color-brand-blue-700:  #1E40AF;
+
+      --color-success-bg:   #DCFCE7;
+      --color-success-text: #166534;
+      --color-warn-bg:      #FEF9C3;
+      --color-warn-text:    #854D0E;
+      --color-closed-bg:    #FEE2E2;
+      --color-closed-text:  #991B1B;
+      --color-error-bg:     #F3E8FF;
+      --color-error-text:   #6B21A8;
+
+      --space-xs:  8px;
+      --space-sm:  12px;
+      --space-md:  16px;
+      --space-lg:  20px;
+      --space-xl:  24px;
+      --space-xxl: 32px;
+
+      --rounded-sm:   6px;
+      --rounded-md:   8px;
+      --rounded-lg:   12px;
+      --rounded-xl:   16px;
+      --rounded-full: 9999px;
+
+      --font: 'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
-      background: #f0f2f6;
+      font-family: var(--font);
+      background: var(--color-surface-soft);
       min-height: 100vh;
+      color: var(--color-ink);
     }
+
+    /* ── Version Banner ── */
+    .version-banner {
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-xxl);
+      position: relative;
+      min-height: 44px;
+    }
+    .version-banner-inner {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .version-badge {
+      background: var(--color-brand-coral);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      padding: 2px 10px;
+      border-radius: var(--rounded-full);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .version-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.78);
+    }
+    .version-banner-close {
+      position: absolute;
+      right: var(--space-md);
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.45);
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      padding: 4px 6px;
+      border-radius: var(--rounded-full);
+      transition: color 0.15s;
+    }
+    .version-banner-close:hover { color: #fff; }
 
     /* ── Header ── */
     .header {
-      background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
-      color: #fff;
-      padding: 28px 24px 24px;
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      padding: var(--space-xxl) var(--space-xl);
       text-align: center;
     }
-    .header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; }
-    .header p  { margin-top: 6px; font-size: 0.9rem; opacity: 0.85; }
+    .header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+    .header p {
+      margin-top: var(--space-xs);
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.52);
+      font-weight: 400;
+    }
 
     /* ── Layout ── */
     .container {
-      max-width: 780px;
-      margin: 32px auto;
-      padding: 0 16px 48px;
+      max-width: 720px;
+      margin: var(--space-xxl) auto;
+      padding: 0 var(--space-md) var(--space-xxl);
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: var(--space-md);
     }
 
     /* ── Card ── */
     .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      background: var(--color-canvas);
+      border-radius: var(--rounded-xl);
+      border: 1px solid var(--color-hairline);
+      box-shadow: rgba(0,0,0,0.04) 0px 1px 2px 0px;
       overflow: hidden;
     }
     .card-header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 16px 20px;
-      background: #e8f0fe;
-      border-bottom: 1px solid #c5d8fb;
+      gap: var(--space-sm);
+      padding: var(--space-md) var(--space-xl);
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-hairline);
     }
     .step-badge {
-      background: #1565c0;
-      color: #fff;
-      border-radius: 50%;
-      width: 28px; height: 28px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      border-radius: var(--rounded-full);
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
     }
-    .card-header h2 { font-size: 1rem; font-weight: 600; color: #1a237e; }
-    .card-body { padding: 20px; }
+    .step-badge.done { background: var(--color-brand-coral); }
+    .card-header h2 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--color-ink);
+    }
+    .card-body { padding: var(--space-xl); }
 
     /* ── Form elements ── */
-    label { display: block; font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 6px; }
+    label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-charcoal);
+      margin-bottom: var(--space-xs);
+    }
 
     .input-wrap {
       display: flex;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--rounded-md);
       overflow: hidden;
-      transition: box-shadow .15s;
+      transition: box-shadow .15s, border-color .15s;
     }
-    .input-wrap:focus-within { box-shadow: 0 0 0 3px rgba(21,101,192,.25); border-color: #1565c0; }
+    .input-wrap:focus-within {
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+      border-color: var(--color-brand-blue);
+    }
     .input-wrap input {
       flex: 1;
       border: none;
       outline: none;
-      padding: 10px 14px;
-      font-size: 0.95rem;
-      font-family: monospace;
+      padding: 10px var(--space-md);
+      font-size: 0.9375rem;
+      font-family: var(--font);
       background: transparent;
+      color: var(--color-ink);
     }
     .toggle-btn {
-      background: #f5f5f5;
+      background: var(--color-surface);
       border: none;
-      border-left: 1px solid #ccc;
-      padding: 0 14px;
+      border-left: 1px solid var(--color-hairline);
+      padding: 0 var(--space-md);
       cursor: pointer;
       font-size: 1rem;
       transition: background .15s;
     }
-    .toggle-btn:hover { background: #e0e0e0; }
+    .toggle-btn:hover { background: var(--color-hairline); }
 
-    /* file input */
+    /* ── File area ── */
     .file-area {
-      border: 2px dashed #b0bec5;
-      border-radius: 8px;
-      padding: 24px;
+      border: 2px dashed var(--color-hairline);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-xxl) var(--space-xl);
       text-align: center;
       cursor: pointer;
       transition: border-color .15s, background .15s;
       position: relative;
     }
     .file-area:hover, .file-area.drag-over {
-      border-color: #1565c0;
-      background: #e8f0fe;
+      border-color: var(--color-primary);
+      background: var(--color-surface);
     }
     .file-area input[type=file] {
-      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
     }
-    .file-area .file-icon { font-size: 2rem; margin-bottom: 8px; }
-    .file-area p { font-size: 0.88rem; color: #666; }
+    .file-area .file-icon { font-size: 2rem; margin-bottom: var(--space-xs); }
+    .file-area p  { font-size: 0.875rem; color: var(--color-steel); }
+    .file-area small { font-size: 0.75rem; color: var(--color-stone); }
+
+    /* ── File name pill with remove button ── */
     .file-name {
-      margin-top: 10px;
-      font-size: 0.85rem;
-      color: #1565c0;
-      font-weight: 600;
       display: none;
+      align-items: center;
+      gap: var(--space-xs);
+      margin-top: var(--space-sm);
+      padding: var(--space-xs) var(--space-sm) var(--space-xs) var(--space-md);
+      background: var(--color-surface);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--rounded-full);
+    }
+    .file-name-text {
+      flex: 1;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--color-ink);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-remove-btn {
+      flex-shrink: 0;
+      background: transparent;
+      border: none;
+      color: var(--color-steel);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--rounded-full);
+      transition: background .15s, color .15s;
+    }
+    .file-remove-btn:hover {
+      background: var(--color-closed-bg);
+      color: var(--color-closed-text);
     }
 
     select {
       width: 100%;
-      padding: 10px 14px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 0.95rem;
+      padding: 10px var(--space-md);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--rounded-md);
+      font-size: 0.9375rem;
+      font-family: var(--font);
       outline: none;
-      transition: box-shadow .15s;
-      background: #fff;
+      transition: box-shadow .15s, border-color .15s;
+      background: var(--color-canvas);
+      color: var(--color-ink);
     }
-    select:focus { box-shadow: 0 0 0 3px rgba(21,101,192,.25); border-color: #1565c0; }
+    select:focus {
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+      border-color: var(--color-brand-blue);
+    }
 
-    .hint { font-size: 0.78rem; color: #888; margin-top: 6px; }
+    .hint { font-size: 0.75rem; color: var(--color-steel); margin-top: var(--space-xs); }
 
-    /* ── Button ── */
+    /* ── Buttons ── */
     .btn-run {
       width: 100%;
-      padding: 14px;
-      background: #1565c0;
-      color: #fff;
+      padding: 13px var(--space-xl);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
       border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 700;
+      border-radius: var(--rounded-full);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      font-family: var(--font);
       cursor: pointer;
       transition: background .15s, transform .1s;
-      letter-spacing: 0.3px;
     }
-    .btn-run:hover:not(:disabled) { background: #0d47a1; }
+    .btn-run:hover:not(:disabled) { background: #2a2a2a; }
     .btn-run:active:not(:disabled) { transform: scale(0.98); }
-    .btn-run:disabled { background: #90a4ae; cursor: not-allowed; }
+    .btn-run:disabled {
+      background: var(--color-hairline);
+      color: var(--color-muted);
+      cursor: not-allowed;
+    }
 
     /* ── Progress ── */
-    .progress-wrap { display: none; }
+    .progress-wrap { display: none; margin-top: var(--space-lg); }
     .progress-label {
-      display: flex; justify-content: space-between;
-      font-size: 0.82rem; color: #555; margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      color: var(--color-steel);
+      margin-bottom: var(--space-xs);
     }
     .progress-bar-bg {
-      background: #e0e0e0;
-      border-radius: 99px;
-      height: 10px;
+      background: var(--color-hairline);
+      border-radius: var(--rounded-full);
+      height: 6px;
       overflow: hidden;
     }
     .progress-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #1565c0, #42a5f5);
-      border-radius: 99px;
+      background: var(--color-brand-coral);
+      border-radius: var(--rounded-full);
       transition: width .3s ease;
       width: 0%;
     }
@@ -173,93 +356,127 @@
     /* ── Result ── */
     .result-section { display: none; }
     .result-header {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 10px;
-      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
     }
-    .result-header h3 { font-size: 1rem; font-weight: 700; color: #1a237e; }
-
-    .btn-download {
-      padding: 8px 18px;
-      background: #2e7d32;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.88rem;
+    .result-header h3 {
+      font-size: 0.9375rem;
       font-weight: 600;
+      color: var(--color-ink);
+    }
+    .btn-download {
+      padding: 9px var(--space-lg);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      border: none;
+      border-radius: var(--rounded-full);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      font-family: var(--font);
       cursor: pointer;
       transition: background .15s;
     }
-    .btn-download:hover { background: #1b5e20; }
+    .btn-download:hover { background: #2a2a2a; }
 
-    /* stats pills */
-    .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    /* ── Stats pills ── */
+    .stats { display: flex; gap: var(--space-xs); flex-wrap: wrap; margin-bottom: var(--space-md); }
     .stat-pill {
-      padding: 5px 14px;
-      border-radius: 20px;
-      font-size: 0.82rem;
+      padding: 4px var(--space-sm);
+      border-radius: var(--rounded-full);
+      font-size: 0.75rem;
       font-weight: 600;
     }
-    .pill-total   { background: #e3f2fd; color: #1565c0; }
-    .pill-active  { background: #e8f5e9; color: #2e7d32; }
-    .pill-suspend { background: #fff8e1; color: #f57f17; }
-    .pill-closed  { background: #fce4ec; color: #c62828; }
-    .pill-error   { background: #f3e5f5; color: #6a1b9a; }
+    .pill-total   { background: var(--color-surface); color: var(--color-charcoal); border: 1px solid var(--color-hairline); }
+    .pill-active  { background: var(--color-success-bg); color: var(--color-success-text); }
+    .pill-suspend { background: var(--color-warn-bg);    color: var(--color-warn-text); }
+    .pill-closed  { background: var(--color-closed-bg);  color: var(--color-closed-text); }
+    .pill-error   { background: var(--color-error-bg);   color: var(--color-error-text); }
 
-    /* table */
+    /* ── Table ── */
     .table-wrap {
       overflow-x: auto;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--rounded-lg);
     }
-    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
     thead th {
-      background: #1565c0;
-      color: #fff;
-      padding: 10px 12px;
+      background: var(--color-surface);
+      color: var(--color-steel);
+      padding: var(--space-sm) var(--space-md);
       text-align: left;
       white-space: nowrap;
-      position: sticky; top: 0;
+      font-size: 0.75rem;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
     }
-    tbody tr:nth-child(even) { background: #f5f7fa; }
-    tbody tr:hover { background: #e8f0fe; }
-    tbody td { padding: 8px 12px; border-bottom: 1px solid #eee; white-space: nowrap; }
+    tbody tr:nth-child(even) { background: var(--color-surface-soft); }
+    tbody tr:hover           { background: var(--color-surface); }
+    tbody td {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--color-hairline-soft);
+      white-space: nowrap;
+      color: var(--color-charcoal);
+    }
     .badge {
       display: inline-block;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 0.78rem;
+      padding: 3px var(--space-sm);
+      border-radius: var(--rounded-full);
+      font-size: 0.6875rem;
       font-weight: 600;
     }
-    .badge-01 { background: #e8f5e9; color: #2e7d32; }
-    .badge-02 { background: #fff8e1; color: #f57f17; }
-    .badge-03 { background: #fce4ec; color: #c62828; }
-    .badge-err { background: #f3e5f5; color: #6a1b9a; }
+    .badge-01  { background: var(--color-success-bg); color: var(--color-success-text); }
+    .badge-02  { background: var(--color-warn-bg);    color: var(--color-warn-text); }
+    .badge-03  { background: var(--color-closed-bg);  color: var(--color-closed-text); }
+    .badge-err { background: var(--color-error-bg);   color: var(--color-error-text); }
 
-    /* error alert */
+    /* ── Alerts ── */
     .alert {
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 0.88rem;
-      margin-top: 12px;
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--rounded-md);
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      margin-top: var(--space-sm);
       display: none;
+      white-space: pre-line;
     }
-    .alert-error   { background: #fce4ec; color: #b71c1c; border: 1px solid #ef9a9a; }
-    .alert-warning { background: #fff8e1; color: #e65100; border: 1px solid #ffcc02; }
-    .alert-info    { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+    .alert-error   { background: var(--color-closed-bg);   color: #991B1B; border: 1px solid #FECACA; }
+    .alert-warning { background: var(--color-warn-bg);     color: #854D0E; border: 1px solid #FDE68A; }
+    .alert-info    { background: var(--color-brand-blue-200); color: var(--color-brand-blue-700); border: 1px solid #93C5FD; }
 
     .max-rows-note {
       font-size: 0.75rem;
-      color: #999;
+      color: var(--color-stone);
       text-align: right;
-      margin-top: 6px;
+      margin-top: var(--space-xs);
+    }
+
+    @media (max-width: 600px) {
+      .header h1    { font-size: 1.375rem; }
+      .container    { gap: var(--space-sm); margin: var(--space-xl) auto; }
+      .card-body    { padding: var(--space-md); }
+      .version-text { display: none; }
     }
   </style>
 </head>
 <body>
 
+<!-- ── Version Banner ── -->
+<div class="version-banner" id="versionBanner">
+  <div class="version-banner-inner">
+    <span class="version-badge">v2.0.0 NEW</span>
+    <span class="version-text">파일 삭제 기능 · 빈 헤더 행 자동 건너뛰기 · MiniMax 디자인 전면 적용</span>
+  </div>
+  <button class="version-banner-close" onclick="dismissBanner()" title="닫기">✕</button>
+</div>
+
+<!-- ── Header ── -->
 <div class="header">
-  <h1>🏢 사업자 휴·폐업 조회</h1>
+  <h1>사업자 휴·폐업 조회</h1>
   <p>국세청 사업자등록정보 상태조회 서비스 (공공데이터포털)</p>
 </div>
 
@@ -294,7 +511,11 @@
         <div class="file-icon">📂</div>
         <p>클릭하거나 파일을 드래그하여 업로드하세요<br><small>(.xlsx / .xls)</small></p>
       </div>
-      <div class="file-name" id="fileName"></div>
+
+      <div class="file-name" id="fileNameEl">
+        <span class="file-name-text" id="fileNameText"></span>
+        <button class="file-remove-btn" id="fileRemoveBtn" title="파일 삭제">✕</button>
+      </div>
 
       <div id="colSelectWrap" style="margin-top:16px; display:none;">
         <label for="colSelect">사업자등록번호 열 선택</label>
@@ -304,8 +525,8 @@
         <p class="hint">하이픈(-)이 포함되어 있어도 자동으로 제거됩니다.</p>
       </div>
 
-      <div class="alert alert-warning" id="colWarnAlert" style="display:none;"></div>
-      <div class="alert alert-error" id="fileAlert"></div>
+      <div class="alert alert-warning" id="colWarnAlert"></div>
+      <div class="alert alert-error"   id="fileAlert"></div>
     </div>
   </div>
 
@@ -318,7 +539,7 @@
     <div class="card-body">
       <button class="btn-run" id="runBtn" disabled>🔍 조회 시작</button>
 
-      <div class="progress-wrap" id="progressWrap" style="margin-top:16px;">
+      <div class="progress-wrap" id="progressWrap">
         <div class="progress-label">
           <span id="progressText">처리 중...</span>
           <span id="progressPct">0%</span>
@@ -329,14 +550,14 @@
       </div>
 
       <div class="alert alert-error" id="runAlert"></div>
-      <div class="alert alert-info" id="runInfo"></div>
+      <div class="alert alert-info"  id="runInfo"></div>
     </div>
   </div>
 
   <!-- Result -->
   <div class="card result-section" id="resultSection">
     <div class="card-header">
-      <div class="step-badge">✓</div>
+      <div class="step-badge done">✓</div>
       <h2>조회 결과</h2>
     </div>
     <div class="card-body">
@@ -358,48 +579,71 @@
 </div>
 
 <script>
-/* ── State ── */
-let workbook = null;
-let sheetData = [];   // array of row-objects from selected sheet
-let headers = [];
-let resultRows = [];  // final data with status columns appended
+/* ════════════════════════════════════
+   Version Banner
+   ════════════════════════════════════ */
+const CURRENT_VERSION = '2.0.0';
+
+function checkVersionBanner() {
+  if (localStorage.getItem('biz-tracker-banner-v') !== CURRENT_VERSION) {
+    document.getElementById('versionBanner').style.display = 'flex';
+  }
+}
+function dismissBanner() {
+  localStorage.setItem('biz-tracker-banner-v', CURRENT_VERSION);
+  document.getElementById('versionBanner').style.display = 'none';
+}
+checkVersionBanner();
+
+/* ════════════════════════════════════
+   State
+   ════════════════════════════════════ */
+let workbook   = null;
+let sheetData  = [];
+let headers    = [];
+let resultRows = [];
 
 const MAX_PREVIEW_ROWS = 200;
 
 /* ── DOM refs ── */
-const apiKeyInput  = document.getElementById('apiKey');
-const toggleKey    = document.getElementById('toggleKey');
-const fileInput    = document.getElementById('fileInput');
-const fileArea     = document.getElementById('fileArea');
-const fileNameEl   = document.getElementById('fileName');
-const colSelectWrap= document.getElementById('colSelectWrap');
-const colSelect    = document.getElementById('colSelect');
-const fileAlert    = document.getElementById('fileAlert');
-const colWarnAlert = document.getElementById('colWarnAlert');
-const runBtn       = document.getElementById('runBtn');
-const progressWrap = document.getElementById('progressWrap');
-const progressText = document.getElementById('progressText');
-const progressPct  = document.getElementById('progressPct');
-const progressFill = document.getElementById('progressFill');
-const runAlert     = document.getElementById('runAlert');
-const runInfo      = document.getElementById('runInfo');
-const resultSection= document.getElementById('resultSection');
-const resultTitle  = document.getElementById('resultTitle');
-const downloadBtn  = document.getElementById('downloadBtn');
-const statsWrap    = document.getElementById('statsWrap');
-const resultHead   = document.getElementById('resultHead');
-const resultBody   = document.getElementById('resultBody');
-const maxRowsNote  = document.getElementById('maxRowsNote');
+const apiKeyInput   = document.getElementById('apiKey');
+const toggleKey     = document.getElementById('toggleKey');
+const fileInput     = document.getElementById('fileInput');
+const fileArea      = document.getElementById('fileArea');
+const fileNameEl    = document.getElementById('fileNameEl');
+const fileNameText  = document.getElementById('fileNameText');
+const fileRemoveBtn = document.getElementById('fileRemoveBtn');
+const colSelectWrap = document.getElementById('colSelectWrap');
+const colSelect     = document.getElementById('colSelect');
+const fileAlert     = document.getElementById('fileAlert');
+const colWarnAlert  = document.getElementById('colWarnAlert');
+const runBtn        = document.getElementById('runBtn');
+const progressWrap  = document.getElementById('progressWrap');
+const progressText  = document.getElementById('progressText');
+const progressPct   = document.getElementById('progressPct');
+const progressFill  = document.getElementById('progressFill');
+const runAlert      = document.getElementById('runAlert');
+const runInfo       = document.getElementById('runInfo');
+const resultSection = document.getElementById('resultSection');
+const resultTitle   = document.getElementById('resultTitle');
+const downloadBtn   = document.getElementById('downloadBtn');
+const statsWrap     = document.getElementById('statsWrap');
+const resultHead    = document.getElementById('resultHead');
+const resultBody    = document.getElementById('resultBody');
+const maxRowsNote   = document.getElementById('maxRowsNote');
 
-/* ── Helpers ── */
+/* ════════════════════════════════════
+   Helpers
+   ════════════════════════════════════ */
 function showAlert(el, msg) { el.textContent = msg; el.style.display = 'block'; }
 function hideAlert(el)      { el.style.display = 'none'; }
+function sleep(ms)          { return new Promise(r => setTimeout(r, ms)); }
 
 function checkRunReady() {
-  const hasKey  = apiKeyInput.value.trim().length > 0;
-  const hasFile = sheetData.length > 0;
-  const hasCol  = colSelect.value !== '';
-  runBtn.disabled = !(hasKey && hasFile && hasCol);
+  const ok = apiKeyInput.value.trim().length > 0
+          && sheetData.length > 0
+          && colSelect.value !== '';
+  runBtn.disabled = !ok;
 }
 
 function setProgress(done, total) {
@@ -414,22 +658,47 @@ function normalizeRegNo(val) {
   return String(val).replace(/[^0-9]/g, '').padStart(10, '0').slice(0, 10);
 }
 
-/* ── API Key toggle ── */
+/* ════════════════════════════════════
+   File — clear
+   ════════════════════════════════════ */
+function clearFile() {
+  workbook  = null;
+  sheetData = [];
+  headers   = [];
+  fileInput.value             = '';
+  fileNameEl.style.display    = 'none';
+  fileNameText.textContent    = '';
+  colSelectWrap.style.display = 'none';
+  colSelect.innerHTML = '<option value="">-- 열을 선택하세요 --</option>';
+  hideAlert(fileAlert);
+  hideAlert(colWarnAlert);
+  checkRunReady();
+}
+
+fileRemoveBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  clearFile();
+});
+
+/* ════════════════════════════════════
+   API Key toggle
+   ════════════════════════════════════ */
 toggleKey.addEventListener('click', () => {
-  const isHidden = apiKeyInput.type === 'password';
-  apiKeyInput.type = isHidden ? 'text' : 'password';
-  toggleKey.textContent = isHidden ? '🙈' : '👁';
+  const hidden = apiKeyInput.type === 'password';
+  apiKeyInput.type      = hidden ? 'text' : 'password';
+  toggleKey.textContent = hidden ? '🙈' : '👁';
 });
 apiKeyInput.addEventListener('input', checkRunReady);
 
-/* ── File drag/drop ── */
-fileArea.addEventListener('dragover', (e) => { e.preventDefault(); fileArea.classList.add('drag-over'); });
-fileArea.addEventListener('dragleave', () => fileArea.classList.remove('drag-over'));
+/* ════════════════════════════════════
+   File drag / drop / pick
+   ════════════════════════════════════ */
+fileArea.addEventListener('dragover',  (e) => { e.preventDefault(); fileArea.classList.add('drag-over'); });
+fileArea.addEventListener('dragleave', ()  => fileArea.classList.remove('drag-over'));
 fileArea.addEventListener('drop', (e) => {
   e.preventDefault();
   fileArea.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
 });
 fileInput.addEventListener('change', () => {
   if (fileInput.files[0]) handleFile(fileInput.files[0]);
@@ -444,36 +713,56 @@ function handleFile(file) {
   }
 
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = (ev) => {
     try {
-      const data = new Uint8Array(e.target.result);
+      const data = new Uint8Array(ev.target.result);
       workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const ws = workbook.Sheets[sheetName];
-      const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      const ws = workbook.Sheets[workbook.SheetNames[0]];
 
-      if (!raw || raw.length === 0) {
-        showAlert(fileAlert, '⚠️ 파일에 데이터가 없습니다.');
-        return;
+      /* Read as raw 2-D array, detect first row with ≥2 non-empty cells as header */
+      const rawArray = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      let headerRowIdx = 0;
+      for (let i = 0; i < Math.min(rawArray.length, 20); i++) {
+        const row = rawArray[i] || [];
+        const nonEmpty = row.filter(c => c !== null && c !== undefined && String(c).trim() !== '');
+        if (nonEmpty.length >= 2) { headerRowIdx = i; break; }
       }
 
-      sheetData = raw;
-      headers   = Object.keys(raw[0]);
+      /* Replace empty header cells with 열N placeholder */
+      const rawHdrRow = rawArray[headerRowIdx] || [];
+      headers = rawHdrRow.map((h, idx) => {
+        const s = (h !== null && h !== undefined) ? String(h).trim() : '';
+        return s === '' ? `열${idx + 1}` : s;
+      });
 
-      /* Populate column dropdown — A~G열(최대 7개)만 표시 */
+      /* Build row objects from subsequent non-blank rows */
+      const raw = rawArray
+        .slice(headerRowIdx + 1)
+        .filter(row => row && row.some(c => c !== null && c !== undefined && String(c).trim() !== ''))
+        .map(row => {
+          const obj = {};
+          headers.forEach((h, idx) => { obj[h] = row[idx] !== undefined ? row[idx] : ''; });
+          return obj;
+        });
+
+      if (raw.length === 0) { showAlert(fileAlert, '⚠️ 파일에 데이터가 없습니다.'); return; }
+
+      sheetData = raw;
+
+      /* Populate column dropdown — first 7 columns */
       colSelect.innerHTML = '<option value="">-- 열을 선택하세요 --</option>';
       headers.slice(0, 7).forEach((h, idx) => {
         const opt = document.createElement('option');
-        opt.value = h;
+        opt.value       = h;
         opt.textContent = `${String.fromCharCode(65 + idx)}열: ${h}`;
-        /* Auto-select if column name looks like a business registration number */
         if (/사업자|등록번호|b_no|biz|bizno/i.test(h)) opt.selected = true;
         colSelect.appendChild(opt);
       });
 
       colSelectWrap.style.display = 'block';
-      fileNameEl.textContent = `📄 ${file.name}  (${raw.length.toLocaleString()} 행)`;
-      fileNameEl.style.display = 'block';
+      fileNameText.textContent    = `📄 ${file.name}  (${raw.length.toLocaleString()} 행)`;
+      fileNameEl.style.display    = 'flex';
       checkRunReady();
     } catch (err) {
       showAlert(fileAlert, '⚠️ 파일 파싱 오류: ' + err.message);
@@ -482,35 +771,32 @@ function handleFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
+/* ── Column selection warning ── */
 colSelect.addEventListener('change', () => {
   checkRunReady();
   hideAlert(colWarnAlert);
-
   const col = colSelect.value;
   if (!col || sheetData.length === 0) return;
 
-  /* 숫자·하이픈 이외 문자가 남는 행 번호 수집 (행 번호는 헤더 제외 1-based) */
   const badRows = [];
   sheetData.forEach((row, idx) => {
-    const val = String(row[col] ?? '');
-    const stripped = val.replace(/-/g, '');          // 하이픈만 먼저 제거
-    if (stripped !== '' && /[^0-9]/.test(stripped)) { // 숫자 외 문자가 남으면
-      badRows.push(idx + 2);                          // 엑셀 2행부터(헤더=1행)
-    }
+    const stripped = String(row[col] ?? '').replace(/-/g, '');
+    if (stripped !== '' && /[^0-9]/.test(stripped)) badRows.push(idx + 2);
   });
 
   if (badRows.length > 0) {
-    const rowList = badRows.length > 20
+    const list = badRows.length > 20
       ? badRows.slice(0, 20).join(', ') + ` 외 ${badRows.length - 20}건`
       : badRows.join(', ');
     showAlert(colWarnAlert,
-      `⚠️ 선택한 열에 숫자가 아닌 문자(특수기호 등)가 포함된 행이 있습니다. 파일을 다시 확인해 주세요.\n` +
-      `문제 행(엑셀 행 번호): ${rowList}`
+      `⚠️ 선택한 열에 숫자가 아닌 문자(특수기호 등)가 포함된 행이 있습니다. 파일을 다시 확인해 주세요.\n문제 행(엑셀 행 번호): ${list}`
     );
   }
 });
 
-/* ── Run ── */
+/* ════════════════════════════════════
+   Run query
+   ════════════════════════════════════ */
 runBtn.addEventListener('click', runQuery);
 
 async function runQuery() {
@@ -523,12 +809,7 @@ async function runQuery() {
   const col        = colSelect.value;
   if (!serviceKey || !col) return;
 
-  /* Extract & normalise reg numbers */
-  const rows = sheetData.map(row => ({
-    ...row,
-    __b_no: normalizeRegNo(row[col])
-  }));
-
+  const rows      = sheetData.map(row => ({ ...row, __b_no: normalizeRegNo(row[col]) }));
   const validRows = rows.filter(r => r.__b_no.length === 10);
   if (validRows.length === 0) {
     showAlert(runAlert, '⚠️ 선택한 열에서 유효한 사업자등록번호(10자리)를 찾을 수 없습니다.');
@@ -537,56 +818,42 @@ async function runQuery() {
 
   const API = 'https://api.odcloud.kr/api/nts-businessman/v1/status';
 
-  /* ── 사전 검증: 첫 번째 데이터 1건으로 API KEY·시스템 정상 여부 확인 ── */
+  /* Pre-flight: verify key with 1 record */
   runBtn.disabled = true;
   showAlert(runInfo, '⏳ API 연결 및 인증키 확인 중...');
   try {
-    const testBody = { b_no: [validRows[0].__b_no] };
-    const testResp = await fetch(`${API}?serviceKey=${encodeURIComponent(serviceKey)}`, {
+    const r = await fetch(`${API}?serviceKey=${encodeURIComponent(serviceKey)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(testBody)
+      body: JSON.stringify({ b_no: [validRows[0].__b_no] })
     });
-    if (!testResp.ok) {
-      const text = await testResp.text();
-      let msg = `API 오류 (HTTP ${testResp.status})`;
-      try {
-        const errJson = JSON.parse(text);
-        if (errJson.status_code) msg = `API 오류: ${errJson.status_code} — ${errJson.request_msg || ''}`;
-      } catch {}
+    if (!r.ok) {
+      const txt = await r.text();
+      let msg = `API 오류 (HTTP ${r.status})`;
+      try { const j = JSON.parse(txt); if (j.status_code) msg = `${j.status_code} — ${j.request_msg || ''}`; } catch {}
       hideAlert(runInfo);
       showAlert(runAlert, `⛔ 사전 검증 실패 — ${msg}\nAPI KEY를 다시 확인해 주세요.`);
-      runBtn.disabled = false;
-      checkRunReady();
-      return;
+      runBtn.disabled = false; checkRunReady(); return;
     }
-    const testJson = await testResp.json();
-    if (testJson.status_code && testJson.status_code !== 'OK') {
+    const j = await r.json();
+    if (j.status_code && j.status_code !== 'OK') {
       hideAlert(runInfo);
-      showAlert(runAlert,
-        `⛔ 사전 검증 실패 — ${testJson.status_code}: ${testJson.request_msg || ''}\nAPI KEY를 다시 확인해 주세요.`
-      );
-      runBtn.disabled = false;
-      checkRunReady();
-      return;
+      showAlert(runAlert, `⛔ 사전 검증 실패 — ${j.status_code}: ${j.request_msg || ''}\nAPI KEY를 다시 확인해 주세요.`);
+      runBtn.disabled = false; checkRunReady(); return;
     }
-  } catch (prefErr) {
+  } catch (e) {
     hideAlert(runInfo);
-    const isCors = prefErr instanceof TypeError;
     showAlert(runAlert,
-      isCors
+      e instanceof TypeError
         ? '⛔ 사전 검증 실패 — CORS 오류: 브라우저가 api.odcloud.kr 직접 호출을 차단했습니다.\n→ Netlify Functions 프록시 사용을 권장합니다.'
-        : `⛔ 사전 검증 실패 — ${prefErr.message}`
+        : `⛔ 사전 검증 실패 — ${e.message}`
     );
-    runBtn.disabled = false;
-    checkRunReady();
-    return;
+    runBtn.disabled = false; checkRunReady(); return;
   }
   hideAlert(runInfo);
 
-  /* Show progress */
+  /* Batch processing */
   progressWrap.style.display = 'block';
-  runBtn.disabled = true;
   setProgress(0, validRows.length);
 
   const BATCH = 100;
@@ -596,86 +863,63 @@ async function runQuery() {
   try {
     for (let i = 0; i < validRows.length; i += BATCH) {
       const chunk = validRows.slice(i, i + BATCH);
-      const body  = { b_no: chunk.map(r => r.__b_no) };
-
       let resp;
       try {
         resp = await fetch(`${API}?serviceKey=${encodeURIComponent(serviceKey)}`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(body)
+          body:    JSON.stringify({ b_no: chunk.map(r => r.__b_no) })
         });
-      } catch (fetchErr) {
-        corsError = true;
-        throw fetchErr;
-      }
+      } catch (fe) { corsError = true; throw fe; }
 
       if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(`API 오류 ${resp.status}: ${text.slice(0, 200)}`);
+        const t = await resp.text();
+        throw new Error(`API 오류 ${resp.status}: ${t.slice(0, 200)}`);
       }
-
-      const json = await resp.json();
-
-      /* data[] 또는 match_cnt 구조 모두 대응 */
-      const items = json.data || json.items || [];
-      items.forEach(item => {
-        statusMap[item.b_no] = item;
-      });
-
+      (await resp.json()).data?.forEach(item => { statusMap[item.b_no] = item; });
       setProgress(Math.min(i + BATCH, validRows.length), validRows.length);
-      /* Throttle: 5 req/s 권장 */
       if (i + BATCH < validRows.length) await sleep(220);
     }
   } catch (err) {
     progressWrap.style.display = 'none';
-    runBtn.disabled = false;
-    checkRunReady();
-
-    if (corsError) {
-      showAlert(runAlert,
-        '⚠️ CORS 오류가 발생했습니다. 브라우저가 api.odcloud.kr 직접 호출을 차단했습니다.\n' +
-        '→ Netlify Functions 프록시 사용을 권장합니다.'
-      );
-    } else {
-      showAlert(runAlert, '⚠️ 오류: ' + err.message);
-    }
+    runBtn.disabled = false; checkRunReady();
+    showAlert(runAlert,
+      corsError
+        ? '⚠️ CORS 오류: 브라우저가 api.odcloud.kr 직접 호출을 차단했습니다.\n→ Netlify Functions 프록시 사용을 권장합니다.'
+        : '⚠️ 오류: ' + err.message
+    );
     return;
   }
 
-  /* Merge results back into original rows */
-  let stats = { total: rows.length, active: 0, suspend: 0, closed: 0, err: 0 };
-
+  /* Merge results */
+  const stats = { total: rows.length, active: 0, suspend: 0, closed: 0, err: 0 };
   resultRows = rows.map(row => {
     const b_no  = row.__b_no;
     const found = b_no.length === 10 ? statusMap[b_no] : null;
-    const newRow = { ...row };
-    delete newRow.__b_no;
+    const out   = { ...row };
+    delete out.__b_no;
 
     if (found) {
-      newRow['사업자상태'] = found.b_stt    || '-';
-      newRow['상태코드']   = found.b_stt_cd || '-';
-      newRow['세금종류']   = found.tax_type  || '-';
-
+      out['사업자상태'] = found.b_stt    || '-';
+      out['상태코드']   = found.b_stt_cd || '-';
+      out['세금종류']   = found.tax_type  || '-';
       const cd = found.b_stt_cd;
       if      (cd === '01') stats.active++;
       else if (cd === '02') stats.suspend++;
       else if (cd === '03') stats.closed++;
       else                  stats.err++;
     } else {
-      newRow['사업자상태'] = b_no.length !== 10 ? '번호오류' : '조회실패';
-      newRow['상태코드']   = '-';
-      newRow['세금종류']   = '-';
+      out['사업자상태'] = b_no.length !== 10 ? '번호오류' : '조회실패';
+      out['상태코드']   = '-';
+      out['세금종류']   = '-';
       stats.err++;
     }
-    return newRow;
+    return out;
   });
 
-  /* Render */
   progressFill.style.width = '100%';
   progressPct.textContent  = '100%';
   progressText.textContent = '조회 완료!';
-
   setTimeout(() => { progressWrap.style.display = 'none'; }, 1000);
 
   renderResult(resultRows, stats);
@@ -683,14 +927,13 @@ async function runQuery() {
   checkRunReady();
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-/* ── Render result table ── */
+/* ════════════════════════════════════
+   Render result
+   ════════════════════════════════════ */
 function renderResult(rows, stats) {
   resultSection.style.display = 'block';
   resultTitle.textContent     = `조회 완료 — 총 ${rows.length.toLocaleString()}건`;
 
-  /* Stats pills */
   statsWrap.innerHTML = `
     <span class="stat-pill pill-total">전체 ${stats.total}</span>
     <span class="stat-pill pill-active">계속사업자 ${stats.active}</span>
@@ -702,12 +945,8 @@ function renderResult(rows, stats) {
   if (rows.length === 0) return;
   const cols = Object.keys(rows[0]);
 
-  /* Header */
   resultHead.innerHTML = '<tr>' + cols.map(c => `<th>${esc(c)}</th>`).join('') + '</tr>';
-
-  /* Body (preview) */
-  const preview = rows.slice(0, MAX_PREVIEW_ROWS);
-  resultBody.innerHTML = preview.map(row => {
+  resultBody.innerHTML = rows.slice(0, MAX_PREVIEW_ROWS).map(row => {
     const cd = row['상태코드'] || '';
     return '<tr>' + cols.map(c => {
       if (c === '사업자상태') {
@@ -718,11 +957,9 @@ function renderResult(rows, stats) {
     }).join('') + '</tr>';
   }).join('');
 
-  if (rows.length > MAX_PREVIEW_ROWS) {
-    maxRowsNote.textContent = `* 화면에는 ${MAX_PREVIEW_ROWS}행까지 표시됩니다. 전체 데이터는 다운로드 파일에 포함됩니다.`;
-  } else {
-    maxRowsNote.textContent = '';
-  }
+  maxRowsNote.textContent = rows.length > MAX_PREVIEW_ROWS
+    ? `* 화면에는 ${MAX_PREVIEW_ROWS}행까지 표시됩니다. 전체 데이터는 다운로드 파일에 포함됩니다.`
+    : '';
 
   resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -731,11 +968,13 @@ function esc(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/* ── Download ── */
+/* ════════════════════════════════════
+   Download
+   ════════════════════════════════════ */
 downloadBtn.addEventListener('click', () => {
   if (!resultRows.length) return;
-  const ws  = XLSX.utils.json_to_sheet(resultRows.map(r => { const o={...r}; delete o.__b_no; return o; }));
-  const wb  = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(resultRows.map(r => { const o = {...r}; delete o.__b_no; return o; }));
+  const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '조회결과');
   const now = new Date();
   const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
