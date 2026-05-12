@@ -647,6 +647,41 @@
       transition: border-color .15s, color .15s;
     }
     .help-icon:hover { border-color: var(--color-charcoal); color: var(--color-ink); }
+
+    /* ── Daily Usage ── */
+    .daily-usage {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: var(--space-md);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-surface);
+      border-radius: var(--rounded-md);
+      border: 1px solid var(--color-hairline-soft);
+    }
+    .daily-usage-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+    }
+    .daily-usage-label { color: var(--color-steel); }
+    .daily-usage-nums  { color: var(--color-charcoal); }
+    .daily-usage-nums strong { color: var(--color-ink); }
+    .daily-usage-track {
+      height: 4px;
+      background: var(--color-hairline);
+      border-radius: var(--rounded-full);
+      overflow: hidden;
+    }
+    .daily-usage-fill {
+      height: 100%;
+      background: var(--color-brand-blue);
+      border-radius: var(--rounded-full);
+      transition: width .4s ease;
+    }
+    .daily-usage-fill.warn  { background: #f59e0b; }
+    .daily-usage-fill.danger { background: var(--color-brand-coral); }
   </style>
 </head>
 <body>
@@ -669,7 +704,7 @@
 <!-- ── Version Chip ── -->
 <button class="ver-chip" id="verChip" onclick="openVerModal()">
   <span class="ver-chip-dot"></span>
-  v2.2.0
+  v2.3.0
 </button>
 
 <!-- ── Version Modal ── -->
@@ -755,6 +790,16 @@
     <div class="card-body">
       <button class="btn-run" id="runBtn" disabled>🔍 조회 시작</button>
 
+      <div class="daily-usage" id="dailyUsage">
+        <div class="daily-usage-row">
+          <span class="daily-usage-label">오늘 조회 현황</span>
+          <span class="daily-usage-nums" id="dailyUsageNums"></span>
+        </div>
+        <div class="daily-usage-track">
+          <div class="daily-usage-fill" id="dailyUsageFill"></div>
+        </div>
+      </div>
+
       <div class="progress-wrap" id="progressWrap">
         <div class="progress-label">
           <span id="progressText">처리 중...</span>
@@ -801,6 +846,14 @@
 const CURRENT_VERSION = '2.0.1';
 
 const VERSION_HISTORY = [
+  {
+    version: '2.3.0',
+    date: '2026-05-12',
+    changes: [
+      '결과 미리보기 최대 30건으로 변경 (전체 데이터는 다운로드 파일에 포함)',
+      '오늘 조회 현황 표시 — 조회 건수 및 남은 건수 실시간 업데이트 (일 최대 10,000건 기준)',
+    ]
+  },
   {
     version: '2.2.0',
     date: '2026-05-12',
@@ -895,7 +948,7 @@ let sheetData  = [];
 let headers    = [];
 let resultRows = [];
 
-const MAX_PREVIEW_ROWS = 200;
+const MAX_PREVIEW_ROWS = 30;
 
 /* ── DOM refs ── */
 const apiKeyInput   = document.getElementById('apiKey');
@@ -1248,6 +1301,7 @@ async function runQuery() {
   progressText.textContent = '조회 완료!';
   setTimeout(() => { progressWrap.style.display = 'none'; }, 1000);
 
+  addDailyUsage(validRows.length);
   renderResult(resultRows, stats);
   runBtn.disabled = false;
   checkRunReady();
@@ -1327,6 +1381,43 @@ function toggleLoginPwd() {
   const inp = document.getElementById('loginPwd');
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
+
+/* ════════════════════════════════════
+   Daily Usage
+   ════════════════════════════════════ */
+const DAILY_LIMIT = 10000;
+
+function dailyKey() {
+  const d = new Date();
+  return `biz_daily_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getDailyUsage() {
+  return parseInt(localStorage.getItem(dailyKey()) || '0', 10);
+}
+
+function addDailyUsage(count) {
+  const key = dailyKey();
+  const cur  = parseInt(localStorage.getItem(key) || '0', 10);
+  localStorage.setItem(key, cur + count);
+  renderDailyUsage();
+}
+
+function renderDailyUsage() {
+  const used   = getDailyUsage();
+  if (used === 0) return;
+  const remain = Math.max(0, DAILY_LIMIT - used);
+  const pct    = Math.min(100, (used / DAILY_LIMIT) * 100);
+  const el     = document.getElementById('dailyUsage');
+  const nums   = document.getElementById('dailyUsageNums');
+  const fill   = document.getElementById('dailyUsageFill');
+  el.style.display = 'flex';
+  nums.innerHTML = `<strong>${used.toLocaleString()}건</strong> 조회 · 남은 <strong>${remain.toLocaleString()}건</strong>`;
+  fill.style.width = pct + '%';
+  fill.className = 'daily-usage-fill' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warn' : '');
+}
+
+renderDailyUsage();
 
 /* ════════════════════════════════════
    Download
