@@ -206,8 +206,18 @@
     .header {
       background: var(--color-primary);
       color: var(--color-on-primary);
-      padding: var(--space-xxl) var(--space-xl);
+      padding: var(--space-xxl) var(--space-xl) var(--space-lg);
       text-align: center;
+      position: relative;
+    }
+    .header-contributor {
+      position: absolute;
+      bottom: var(--space-sm);
+      right: var(--space-lg);
+      font-size: 0.6875rem;
+      color: rgba(255,255,255,0.28);
+      text-align: right;
+      line-height: 1.6;
     }
     .header h1 {
       font-size: 1.75rem;
@@ -574,6 +584,7 @@
 <div class="header">
   <h1>사업자 휴·폐업 조회</h1>
   <p>국세청 사업자등록정보 상태조회 서비스 (공공데이터포털)</p>
+  <div class="header-contributor">Contributor: LJH<br>한국갤럽조사연구소</div>
 </div>
 
 <div class="container">
