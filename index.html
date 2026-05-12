@@ -519,11 +519,11 @@ async function runQuery() {
   try {
     for (let i = 0; i < validRows.length; i += BATCH) {
       const chunk = validRows.slice(i, i + BATCH);
-      const body  = { businesses: chunk.map(r => ({ b_no: r.__b_no })) };
+      const body  = { b_no: chunk.map(r => r.__b_no) };
 
       let resp;
       try {
-        resp = await fetch(`${API}?serviceKey=${encodeURIComponent(serviceKey)}&returnType=JSON`, {
+        resp = await fetch(`${API}?serviceKey=${encodeURIComponent(serviceKey)}`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify(body)
