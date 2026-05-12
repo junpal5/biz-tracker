@@ -3,7 +3,7 @@
 ## 프로젝트 개요
 
 - **앱명**: 🏢 사업자 휴·폐업 조회
-- **파일**: `index.html` (단일 파일 — 모든 CSS·HTML·JS 포함, 약 750줄)
+- **파일**: `index.html` (단일 파일 — 모든 CSS·HTML·JS 포함, 약 750줄), `version-history.json`
 - **저장소**: `junpal5/biz-tracker` (GitHub Pages로 배포)
 - **배포 URL**: `https://junpal5.github.io/biz-tracker/`
 - **사용자**: 비개발자 — 기술 용어 없이 한국어로 안내할 것
@@ -51,18 +51,48 @@
 
 ### 3단계 — 변경 내용 요약 (한국어)
 작업 완료 후 변경된 내용을 **한국어**로 간결하게 요약한다.
+`version-history.json`의 `changes` 배열에 들어갈 항목 형태로 작성한다.
 
-### 4단계 — 자동 Push
-확인 후 즉시 commit하고 `main` 브랜치에 직접 push한다 (PR 없이 바로 반영).
+### 4단계 — 버전 선택지 제공
+요약 후 아래 선택지를 사용자에게 제시한다. 현재 버전은 `version-history.json`의 `currentVersion`을 참조한다.
+
+| 선택 | 버전 변화 | 적합한 경우 |
+|------|-----------|-------------|
+| 패치 | x.x.**+1** | 오탈자 수정, 사소한 버그 수정 |
+| 마이너 | x.**+1**.0 | 새 기능 추가, UI 개선, 기존 기능 변경 |
+| 메이저 | **+1**.0.0 | 전체 구조 변경, 대규모 리디자인 |
+| 버전 유지 | 변경 없음 | 임시 수정 또는 테스트 |
+
+### 5단계 — 자동 Push
+사용자가 버전을 선택하면:
+1. `version-history.json` 업데이트 (`currentVersion` 갱신 + `history` 배열 **맨 앞**에 새 항목 추가)
+2. 날짜는 아래 명령으로 실제 수정 시각을 사용한다 (`T00:00:00.000Z` 고정 금지)
+   ```bash
+   date -u +"%Y-%m-%dT%H:%M:%S.000Z"
+   ```
+3. 변경된 파일 전체 commit 후 `main` 브랜치에 직접 push (PR 없이 바로 반영)
 
 ```bash
-git add index.html
+git add index.html version-history.json
 git commit -m "biz-tracker: <작업 요약>"
 git push origin main
 ```
 
 > Push 실패 시 (충돌): `git pull origin main --rebase` 후 재시도한다.
 > Push 실패 시 (403 인증 오류): 아래 Push 인증 설정 섹션 참고.
+
+---
+
+## 파일별 주의사항
+
+### index.html
+- 약 750줄의 단일 파일. CSS·JS 모두 인라인 포함.
+- 편집 시 Read 도구로 전체 파일을 읽지 말고, grep/offset으로 필요한 부분만 읽는다.
+
+### version-history.json
+- `currentVersion`: 현재 버전 문자열
+- `history`: 최신 버전이 배열 **맨 앞**에 위치
+- 날짜 형식: ISO 8601 UTC — 반드시 실제 수정 시각을 사용할 것
 
 ---
 
