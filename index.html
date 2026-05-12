@@ -577,14 +577,99 @@
       .ver-modal    { width: calc(100vw - 28px); }
       .ver-modal-overlay { padding: 0 0 60px 14px; }
     }
+
+    /* ── Login Screen ── */
+    #loginScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: var(--color-canvas);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      padding: 40px var(--space-xl);
+      border: 1px solid var(--color-hairline);
+      border-radius: var(--rounded-xl);
+      text-align: center;
+    }
+    .login-card h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-ink);
+      margin-bottom: var(--space-xs);
+    }
+    .login-card > p {
+      font-size: 0.875rem;
+      color: var(--color-steel);
+      margin-bottom: var(--space-lg);
+    }
+    .login-error {
+      display: none;
+      font-size: 0.8125rem;
+      color: #dc2626;
+      margin-top: var(--space-xs);
+      text-align: left;
+    }
+    .btn-login {
+      width: 100%;
+      margin-top: var(--space-md);
+      padding: 12px var(--space-xl);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      border: none;
+      border-radius: var(--rounded-full);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-login:hover { background: #2a2a2a; }
+
+    /* ── Help icon ── */
+    .help-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      border: 1px solid var(--color-hairline);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: var(--color-steel);
+      text-decoration: none;
+      transition: border-color .15s, color .15s;
+    }
+    .help-icon:hover { border-color: var(--color-charcoal); color: var(--color-ink); }
   </style>
 </head>
 <body>
 
+<!-- ── Login Screen ── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div style="font-size:2rem; margin-bottom:var(--space-md);">🔒</div>
+    <h2>사업자 휴·폐업 조회</h2>
+    <p>접속하려면 비밀번호를 입력하세요</p>
+    <div class="input-wrap">
+      <input type="password" id="loginPwd" placeholder="비밀번호" autocomplete="current-password" />
+      <button class="toggle-btn" id="loginToggle" onclick="toggleLoginPwd()" title="보기/숨기기">👁</button>
+    </div>
+    <div class="login-error" id="loginError">비밀번호가 올바르지 않습니다.</div>
+    <button class="btn-login" onclick="submitLogin()">입장하기</button>
+  </div>
+</div>
+
 <!-- ── Version Chip ── -->
 <button class="ver-chip" id="verChip" onclick="openVerModal()">
   <span class="ver-chip-dot"></span>
-  v2.1.0
+  v2.2.0
 </button>
 
 <!-- ── Version Modal ── -->
@@ -602,7 +687,7 @@
 <div class="header">
   <h1>사업자 휴·폐업 조회</h1>
   <p>국세청 사업자등록정보 상태조회 서비스 (공공데이터포털)</p>
-  <div class="header-contributor">Contributor: GMJ, JHJ, LJH</div>
+  <div class="header-contributor">Contributor: GMJ, JHJ, LJH<br>한국갤럽조사연구소</div>
 </div>
 
 <div class="container">
@@ -619,7 +704,10 @@
         <input type="password" id="apiKey" placeholder="인증키를 입력하세요" autocomplete="off" />
         <button class="toggle-btn" id="toggleKey" title="보기/숨기기">👁</button>
       </div>
-      <p class="hint">공공데이터포털(data.go.kr) → 마이페이지 → 인증키 발급 → 일반 인증키(Decoding)</p>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:var(--space-xs); gap:var(--space-sm);">
+        <p class="hint" style="margin-top:0;">공공데이터포털(data.go.kr) → 마이페이지 → 인증키 발급 → 일반 인증키(Decoding)</p>
+        <a href="https://www.data.go.kr/ugs/selectPublicDataUseGuideView.do" target="_blank" rel="noopener" class="help-icon" title="공공데이터포털 이용 가이드">?</a>
+      </div>
     </div>
   </div>
 
@@ -713,6 +801,15 @@
 const CURRENT_VERSION = '2.0.1';
 
 const VERSION_HISTORY = [
+  {
+    version: '2.2.0',
+    date: '2026-05-12',
+    changes: [
+      '접속 시 비밀번호 로그인 화면 추가 (로그인 후 localStorage에 저장)',
+      'API 인증키 입력 카드에 공공데이터포털 이용 가이드 도움말 아이콘 추가',
+      'Contributor에 한국갤럽조사연구소 추가',
+    ]
+  },
   {
     version: '2.1.0',
     date: '2026-05-12',
@@ -1195,6 +1292,40 @@ function renderResult(rows, stats) {
 
 function esc(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ════════════════════════════════════
+   Login
+   ════════════════════════════════════ */
+const LOGIN_KEY = 'biz_auth';
+const LOGIN_PWD = 'gallup1974';
+
+(function initLogin() {
+  if (localStorage.getItem(LOGIN_KEY) === '1') {
+    document.getElementById('loginScreen').style.display = 'none';
+    return;
+  }
+  document.getElementById('loginPwd').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitLogin();
+  });
+})();
+
+function submitLogin() {
+  const pwd   = document.getElementById('loginPwd').value;
+  const errEl = document.getElementById('loginError');
+  if (pwd === LOGIN_PWD) {
+    localStorage.setItem(LOGIN_KEY, '1');
+    document.getElementById('loginScreen').style.display = 'none';
+  } else {
+    errEl.style.display = 'block';
+    document.getElementById('loginPwd').value = '';
+    document.getElementById('loginPwd').focus();
+  }
+}
+
+function toggleLoginPwd() {
+  const inp = document.getElementById('loginPwd');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
 /* ════════════════════════════════════

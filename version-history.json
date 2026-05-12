@@ -1,6 +1,15 @@
 {
-  "currentVersion": "2.1.0",
+  "currentVersion": "2.2.0",
   "history": [
+    {
+      "version": "2.2.0",
+      "date": "2026-05-12T09:42:30.000Z",
+      "changes": [
+        "접속 시 비밀번호 로그인 화면 추가 (로그인 후 localStorage에 저장)",
+        "API 인증키 입력 카드에 공공데이터포털 이용 가이드 도움말 아이콘 추가",
+        "Contributor에 한국갤럽조사연구소 추가"
+      ]
+    },
     {
       "version": "2.1.0",
       "date": "2026-05-12T09:31:49.000Z",
