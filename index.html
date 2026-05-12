@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>사업자 휴·폐업 조회</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      background: #f0f2f6;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+      color: #fff;
+      padding: 28px 24px 24px;
+      text-align: center;
+    }
+    .header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; }
+    .header p  { margin-top: 6px; font-size: 0.9rem; opacity: 0.85; }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 780px;
+      margin: 32px auto;
+      padding: 0 16px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 20px;
+      background: #e8f0fe;
+      border-bottom: 1px solid #c5d8fb;
+    }
+    .step-badge {
+      background: #1565c0;
+      color: #fff;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+    }
+    .card-header h2 { font-size: 1rem; font-weight: 600; color: #1a237e; }
+    .card-body { padding: 20px; }
+
+    /* ── Form elements ── */
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 6px; }
+
+    .input-wrap {
+      display: flex;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: box-shadow .15s;
+    }
+    .input-wrap:focus-within { box-shadow: 0 0 0 3px rgba(21,101,192,.25); border-color: #1565c0; }
+    .input-wrap input {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      font-family: monospace;
+      background: transparent;
+    }
+    .toggle-btn {
+      background: #f5f5f5;
+      border: none;
+      border-left: 1px solid #ccc;
+      padding: 0 14px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background .15s;
+    }
+    .toggle-btn:hover { background: #e0e0e0; }
+
+    /* file input */
+    .file-area {
+      border: 2px dashed #b0bec5;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      position: relative;
+    }
+    .file-area:hover, .file-area.drag-over {
+      border-color: #1565c0;
+      background: #e8f0fe;
+    }
+    .file-area input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+    .file-area .file-icon { font-size: 2rem; margin-bottom: 8px; }
+    .file-area p { font-size: 0.88rem; color: #666; }
+    .file-name {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #1565c0;
+      font-weight: 600;
+      display: none;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: box-shadow .15s;
+      background: #fff;
+    }
+    select:focus { box-shadow: 0 0 0 3px rgba(21,101,192,.25); border-color: #1565c0; }
+
+    .hint { font-size: 0.78rem; color: #888; margin-top: 6px; }
+
+    /* ── Button ── */
+    .btn-run {
+      width: 100%;
+      padding: 14px;
+      background: #1565c0;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      letter-spacing: 0.3px;
+    }
+    .btn-run:hover:not(:disabled) { background: #0d47a1; }
+    .btn-run:active:not(:disabled) { transform: scale(0.98); }
+    .btn-run:disabled { background: #90a4ae; cursor: not-allowed; }
+
+    /* ── Progress ── */
+    .progress-wrap { display: none; }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.82rem; color: #555; margin-bottom: 6px;
+    }
+    .progress-bar-bg {
+      background: #e0e0e0;
+      border-radius: 99px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #1565c0, #42a5f5);
+      border-radius: 99px;
+      transition: width .3s ease;
+      width: 0%;
+    }
+
+    /* ── Result ── */
+    .result-section { display: none; }
+    .result-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px;
+      margin-bottom: 14px;
+    }
+    .result-header h3 { font-size: 1rem; font-weight: 700; color: #1a237e; }
+
+    .btn-download {
+      padding: 8px 18px;
+      background: #2e7d32;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-download:hover { background: #1b5e20; }
+
+    /* stats pills */
+    .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .stat-pill {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .pill-total   { background: #e3f2fd; color: #1565c0; }
+    .pill-active  { background: #e8f5e9; color: #2e7d32; }
+    .pill-suspend { background: #fff8e1; color: #f57f17; }
+    .pill-closed  { background: #fce4ec; color: #c62828; }
+    .pill-error   { background: #f3e5f5; color: #6a1b9a; }
+
+    /* table */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    thead th {
+      background: #1565c0;
+      color: #fff;
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+      position: sticky; top: 0;
+    }
+    tbody tr:nth-child(even) { background: #f5f7fa; }
+    tbody tr:hover { background: #e8f0fe; }
+    tbody td { padding: 8px 12px; border-bottom: 1px solid #eee; white-space: nowrap; }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-01 { background: #e8f5e9; color: #2e7d32; }
+    .badge-02 { background: #fff8e1; color: #f57f17; }
+    .badge-03 { background: #fce4ec; color: #c62828; }
+    .badge-err { background: #f3e5f5; color: #6a1b9a; }
+
+    /* error alert */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      margin-top: 12px;
+      display: none;
+    }
+    .alert-error { background: #fce4ec; color: #b71c1c; border: 1px solid #ef9a9a; }
+    .alert-info  { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+
+    .max-rows-note {
+      font-size: 0.75rem;
+      color: #999;
+      text-align: right;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏢 사업자 휴·폐업 조회</h1>
+  <p>국세청 사업자등록정보 상태조회 서비스 (공공데이터포털)</p>
+</div>
+
+<div class="container">
+
+  <!-- Step 1: API Key -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">1</div>
+      <h2>공공데이터포털 API 인증키 입력</h2>
+    </div>
+    <div class="card-body">
+      <label for="apiKey">일반 인증키 (Decoding)</label>
+      <div class="input-wrap">
+        <input type="password" id="apiKey" placeholder="인증키를 입력하세요" autocomplete="off" />
+        <button class="toggle-btn" id="toggleKey" title="보기/숨기기">👁</button>
+      </div>
+      <p class="hint">공공데이터포털(data.go.kr) → 마이페이지 → 인증키 발급 → 일반 인증키(Decoding)</p>
+    </div>
+  </div>
+
+  <!-- Step 2: File Upload -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">2</div>
+      <h2>엑셀 파일 업로드 및 열 선택</h2>
+    </div>
+    <div class="card-body">
+      <label>XLSX 파일 선택</label>
+      <div class="file-area" id="fileArea">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        <div class="file-icon">📂</div>
+        <p>클릭하거나 파일을 드래그하여 업로드하세요<br><small>(.xlsx / .xls)</small></p>
+      </div>
+      <div class="file-name" id="fileName"></div>
+
+      <div id="colSelectWrap" style="margin-top:16px; display:none;">
+        <label for="colSelect">사업자등록번호 열 선택</label>
+        <select id="colSelect">
+          <option value="">-- 열을 선택하세요 --</option>
+        </select>
+        <p class="hint">하이픈(-)이 포함되어 있어도 자동으로 제거됩니다.</p>
+      </div>
+
+      <div class="alert alert-error" id="fileAlert"></div>
+    </div>
+  </div>
+
+  <!-- Step 3: Run -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-badge">3</div>
+      <h2>조회 실행</h2>
+    </div>
+    <div class="card-body">
+      <button class="btn-run" id="runBtn" disabled>🔍 조회 시작</button>
+
+      <div class="progress-wrap" id="progressWrap" style="margin-top:16px;">
+        <div class="progress-label">
+          <span id="progressText">처리 중...</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="alert alert-error" id="runAlert"></div>
+      <div class="alert alert-info" id="runInfo"></div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="card result-section" id="resultSection">
+    <div class="card-header">
+      <div class="step-badge">✓</div>
+      <h2>조회 결과</h2>
+    </div>
+    <div class="card-body">
+      <div class="result-header">
+        <h3 id="resultTitle">조회 완료</h3>
+        <button class="btn-download" id="downloadBtn">⬇ 결과 다운로드 (XLSX)</button>
+      </div>
+      <div class="stats" id="statsWrap"></div>
+      <div class="table-wrap">
+        <table id="resultTable">
+          <thead id="resultHead"></thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+      <p class="max-rows-note" id="maxRowsNote"></p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── State ── */
+let workbook = null;
+let sheetData = [];   // array of row-objects from selected sheet
+let headers = [];
+let resultRows = [];  // final data with status columns appended
+
+const MAX_PREVIEW_ROWS = 200;
+
+/* ── DOM refs ── */
+const apiKeyInput  = document.getElementById('apiKey');
+const toggleKey    = document.getElementById('toggleKey');
+const fileInput    = document.getElementById('fileInput');
+const fileArea     = document.getElementById('fileArea');
+const fileNameEl   = document.getElementById('fileName');
+const colSelectWrap= document.getElementById('colSelectWrap');
+const colSelect    = document.getElementById('colSelect');
+const fileAlert    = document.getElementById('fileAlert');
+const runBtn       = document.getElementById('runBtn');
+const progressWrap = document.getElementById('progressWrap');
+const progressText = document.getElementById('progressText');
+const progressPct  = document.getElementById('progressPct');
+const progressFill = document.getElementById('progressFill');
+const runAlert     = document.getElementById('runAlert');
+const runInfo      = document.getElementById('runInfo');
+const resultSection= document.getElementById('resultSection');
+const resultTitle  = document.getElementById('resultTitle');
+const downloadBtn  = document.getElementById('downloadBtn');
+const statsWrap    = document.getElementById('statsWrap');
+const resultHead   = document.getElementById('resultHead');
+const resultBody   = document.getElementById('resultBody');
+const maxRowsNote  = document.getElementById('maxRowsNote');
+
+/* ── Helpers ── */
+function showAlert(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+function hideAlert(el)      { el.style.display = 'none'; }
+
+function checkRunReady() {
+  const hasKey  = apiKeyInput.value.trim().length > 0;
+  const hasFile = sheetData.length > 0;
+  const hasCol  = colSelect.value !== '';
+  runBtn.disabled = !(hasKey && hasFile && hasCol);
+}
+
+function setProgress(done, total) {
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  progressFill.style.width = pct + '%';
+  progressPct.textContent  = pct + '%';
+  progressText.textContent = `처리 중... (${done} / ${total} 건)`;
+}
+
+function normalizeRegNo(val) {
+  if (val === null || val === undefined) return '';
+  return String(val).replace(/[^0-9]/g, '').padStart(10, '0').slice(0, 10);
+}
+
+/* ── API Key toggle ── */
+toggleKey.addEventListener('click', () => {
+  const isHidden = apiKeyInput.type === 'password';
+  apiKeyInput.type = isHidden ? 'text' : 'password';
+  toggleKey.textContent = isHidden ? '🙈' : '👁';
+});
+apiKeyInput.addEventListener('input', checkRunReady);
+
+/* ── File drag/drop ── */
+fileArea.addEventListener('dragover', (e) => { e.preventDefault(); fileArea.classList.add('drag-over'); });
+fileArea.addEventListener('dragleave', () => fileArea.classList.remove('drag-over'));
+fileArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  fileArea.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) handleFile(fileInput.files[0]);
+});
+
+function handleFile(file) {
+  hideAlert(fileAlert);
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx', 'xls'].includes(ext)) {
+    showAlert(fileAlert, '⚠️ .xlsx 또는 .xls 파일만 지원합니다.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const ws = workbook.Sheets[sheetName];
+      const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+      if (!raw || raw.length === 0) {
+        showAlert(fileAlert, '⚠️ 파일에 데이터가 없습니다.');
+        return;
+      }
+
+      sheetData = raw;
+      headers   = Object.keys(raw[0]);
+
+      /* Populate column dropdown */
+      colSelect.innerHTML = '<option value="">-- 열을 선택하세요 --</option>';
+      headers.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h;
+        opt.textContent = h;
+        /* Auto-select if column name looks like a business registration number */
+        if (/사업자|등록번호|b_no|biz|bizno/i.test(h)) opt.selected = true;
+        colSelect.appendChild(opt);
+      });
+
+      colSelectWrap.style.display = 'block';
+      fileNameEl.textContent = `📄 ${file.name}  (${raw.length.toLocaleString()} 행)`;
+      fileNameEl.style.display = 'block';
+      checkRunReady();
+    } catch (err) {
+      showAlert(fileAlert, '⚠️ 파일 파싱 오류: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+colSelect.addEventListener('change', checkRunReady);
+
+/* ── Run ── */
+runBtn.addEventListener('click', runQuery);
+
+async function runQuery() {
+  hideAlert(runAlert);
+  hideAlert(runInfo);
+  resultSection.style.display = 'none';
+  resultRows = [];
+
+  const serviceKey = apiKeyInput.value.trim();
+  const col        = colSelect.value;
+  if (!serviceKey || !col) return;
+
+  /* Extract & normalise reg numbers */
+  const rows = sheetData.map(row => ({
+    ...row,
+    __b_no: normalizeRegNo(row[col])
+  }));
+
+  const validRows = rows.filter(r => r.__b_no.length === 10);
+  if (validRows.length === 0) {
+    showAlert(runAlert, '⚠️ 선택한 열에서 유효한 사업자등록번호(10자리)를 찾을 수 없습니다.');
+    return;
+  }
+
+  /* Show progress */
+  progressWrap.style.display = 'block';
+  runBtn.disabled = true;
+  setProgress(0, validRows.length);
+
+  const BATCH = 100;
+  const API   = 'https://api.odcloud.kr/api/nts-businessman/v1/status';
+  const statusMap = {};
+  let corsError = false;
+
+  try {
+    for (let i = 0; i < validRows.length; i += BATCH) {
+      const chunk = validRows.slice(i, i + BATCH);
+      const body  = { businesses: chunk.map(r => ({ b_no: r.__b_no })) };
+
+      let resp;
+      try {
+        resp = await fetch(`${API}?serviceKey=${encodeURIComponent(serviceKey)}&returnType=JSON`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body)
+        });
+      } catch (fetchErr) {
+        corsError = true;
+        throw fetchErr;
+      }
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`API 오류 ${resp.status}: ${text.slice(0, 200)}`);
+      }
+
+      const json = await resp.json();
+
+      /* data[] 또는 match_cnt 구조 모두 대응 */
+      const items = json.data || json.items || [];
+      items.forEach(item => {
+        statusMap[item.b_no] = item;
+      });
+
+      setProgress(Math.min(i + BATCH, validRows.length), validRows.length);
+      /* Throttle: 5 req/s 권장 */
+      if (i + BATCH < validRows.length) await sleep(220);
+    }
+  } catch (err) {
+    progressWrap.style.display = 'none';
+    runBtn.disabled = false;
+    checkRunReady();
+
+    if (corsError) {
+      showAlert(runAlert,
+        '⚠️ CORS 오류가 발생했습니다. 브라우저가 api.odcloud.kr 직접 호출을 차단했습니다.\n' +
+        '→ Netlify Functions 프록시 사용을 권장합니다.'
+      );
+    } else {
+      showAlert(runAlert, '⚠️ 오류: ' + err.message);
+    }
+    return;
+  }
+
+  /* Merge results back into original rows */
+  let stats = { total: rows.length, active: 0, suspend: 0, closed: 0, err: 0 };
+
+  resultRows = rows.map(row => {
+    const b_no  = row.__b_no;
+    const found = b_no.length === 10 ? statusMap[b_no] : null;
+    const newRow = { ...row };
+    delete newRow.__b_no;
+
+    if (found) {
+      newRow['사업자상태'] = found.b_stt    || '-';
+      newRow['상태코드']   = found.b_stt_cd || '-';
+      newRow['세금종류']   = found.tax_type  || '-';
+
+      const cd = found.b_stt_cd;
+      if      (cd === '01') stats.active++;
+      else if (cd === '02') stats.suspend++;
+      else if (cd === '03') stats.closed++;
+      else                  stats.err++;
+    } else {
+      newRow['사업자상태'] = b_no.length !== 10 ? '번호오류' : '조회실패';
+      newRow['상태코드']   = '-';
+      newRow['세금종류']   = '-';
+      stats.err++;
+    }
+    return newRow;
+  });
+
+  /* Render */
+  progressFill.style.width = '100%';
+  progressPct.textContent  = '100%';
+  progressText.textContent = '조회 완료!';
+
+  setTimeout(() => { progressWrap.style.display = 'none'; }, 1000);
+
+  renderResult(resultRows, stats);
+  runBtn.disabled = false;
+  checkRunReady();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ── Render result table ── */
+function renderResult(rows, stats) {
+  resultSection.style.display = 'block';
+  resultTitle.textContent     = `조회 완료 — 총 ${rows.length.toLocaleString()}건`;
+
+  /* Stats pills */
+  statsWrap.innerHTML = `
+    <span class="stat-pill pill-total">전체 ${stats.total}</span>
+    <span class="stat-pill pill-active">계속사업자 ${stats.active}</span>
+    <span class="stat-pill pill-suspend">휴업자 ${stats.suspend}</span>
+    <span class="stat-pill pill-closed">폐업자 ${stats.closed}</span>
+    ${stats.err ? `<span class="stat-pill pill-error">조회실패/오류 ${stats.err}</span>` : ''}
+  `;
+
+  if (rows.length === 0) return;
+  const cols = Object.keys(rows[0]);
+
+  /* Header */
+  resultHead.innerHTML = '<tr>' + cols.map(c => `<th>${esc(c)}</th>`).join('') + '</tr>';
+
+  /* Body (preview) */
+  const preview = rows.slice(0, MAX_PREVIEW_ROWS);
+  resultBody.innerHTML = preview.map(row => {
+    const cd = row['상태코드'] || '';
+    return '<tr>' + cols.map(c => {
+      if (c === '사업자상태') {
+        const cls = cd === '01' ? 'badge-01' : cd === '02' ? 'badge-02' : cd === '03' ? 'badge-03' : 'badge-err';
+        return `<td><span class="badge ${cls}">${esc(row[c])}</span></td>`;
+      }
+      return `<td>${esc(String(row[c] ?? ''))}</td>`;
+    }).join('') + '</tr>';
+  }).join('');
+
+  if (rows.length > MAX_PREVIEW_ROWS) {
+    maxRowsNote.textContent = `* 화면에는 ${MAX_PREVIEW_ROWS}행까지 표시됩니다. 전체 데이터는 다운로드 파일에 포함됩니다.`;
+  } else {
+    maxRowsNote.textContent = '';
+  }
+
+  resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ── Download ── */
+downloadBtn.addEventListener('click', () => {
+  if (!resultRows.length) return;
+  const ws  = XLSX.utils.json_to_sheet(resultRows.map(r => { const o={...r}; delete o.__b_no; return o; }));
+  const wb  = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '조회결과');
+  const now = new Date();
+  const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `사업자상태_${ts}.xlsx`);
+});
+</script>
+</body>
+</html>
