@@ -3,7 +3,8 @@
 ## 프로젝트 개요
 
 - **앱명**: 🏢 사업자 휴·폐업 조회
-- **파일**: `index.html` (단일 파일 — 모든 CSS·HTML·JS 포함, 약 750줄), `version-history.json`
+- **파일**: `index.html` (단일 파일 — 모든 CSS·HTML·JS 포함, 약 1000줄), `version-history.json`
+- **현재 버전**: v2.0.0
 - **저장소**: `junpal5/biz-tracker` (GitHub Pages로 배포)
 - **배포 URL**: `https://junpal5.github.io/biz-tracker/`
 - **사용자**: 비개발자 — 기술 용어 없이 한국어로 안내할 것
@@ -16,6 +17,8 @@
 |------|------|
 | Step 1 | 공공데이터포털 API 인증키 입력 (password 타입, 보기/숨기기 토글) |
 | Step 2 | XLSX 파일 업로드 → SheetJS로 파싱 → 사업자등록번호 열 선택 드롭다운 (A~G열, 최대 7개만 표시) |
+| Step 2 (파일 삭제) | 업로드된 파일명 pill 우측 ✕ 버튼으로 파일·열 선택 상태 전체 초기화 |
+| Step 2 (헤더 감지) | `XLSX.utils.sheet_to_json(ws, { header: 1 })`으로 raw 배열 읽기 → 상단 빈 행 건너뛰고 비어있지 않은 셀이 2개 이상인 첫 행을 헤더로 자동 인식. 빈 헤더 셀은 `열N`으로 대체 |
 | Step 2-1 | 열 선택 시 하이픈 제거 후 숫자 이외 문자가 있는 행 번호를 자동 감지해 경고 표시 |
 | Step 3 | 조회 버튼 클릭 → 첫 번째 데이터 1건으로 API KEY·시스템 사전 검증 → 실패 시 중단 및 오류 표시 |
 | Step 3-1 | 검증 통과 시 100건 단위 배치 API 호출 → 프로그레스바 → 결과 테이블 표시 |
@@ -37,6 +40,41 @@
 브라우저에서 `api.odcloud.kr`을 직접 호출하면 CORS 오류가 발생할 수 있다.
 오류 발생 시 앱 내에 "Netlify Functions 프록시 필요" 안내 메시지가 표시된다.
 프록시가 필요한 경우 Netlify Functions 추가를 별도로 검토한다.
+
+---
+
+## 디자인 시스템 (MiniMax 기반)
+
+v2.0.0부터 MiniMax 디자인 시스템을 적용한다. 새 UI 요소 추가 시 아래 토큰을 준수할 것.
+
+### 폰트
+- **기본 폰트**: `DM Sans` (Google Fonts 로드) → fallback: `Inter`, `-apple-system`
+- 단일 폰트 전략 — 두 번째 폰트 패밀리 혼용 금지
+
+### 컬러 토큰 (CSS 변수)
+
+| 변수 | 용도 |
+|------|------|
+| `--color-primary` (#0A0A0A) | 버튼·헤더·step badge 배경 |
+| `--color-on-primary` (#FFFFFF) | primary 위 텍스트 |
+| `--color-canvas` (#FFFFFF) | 카드·입력 필드 배경 |
+| `--color-surface` (#F5F5F5) | 카드 헤더·호버 배경 |
+| `--color-surface-soft` (#FAFAFA) | 페이지 배경 |
+| `--color-hairline` (#E5E5E5) | 카드·입력 테두리 |
+| `--color-hairline-soft` (#F0F0F0) | 테이블 행 구분선 |
+| `--color-ink` (#1A1A1A) | 주요 텍스트 |
+| `--color-charcoal` (#404040) | 본문 텍스트 |
+| `--color-steel` (#888888) | 보조 텍스트·테이블 헤더 |
+| `--color-stone` (#A0A0A0) | 비활성 텍스트 |
+| `--color-brand-coral` (#FF4B2B) | 강조 액센트 (프로그레스 바, NEW 뱃지, 버전 칩 dot) |
+| `--color-brand-blue` (#2563EB) | 포커스 링·링크 |
+
+### 컴포넌트 규칙
+- **버튼**: 반드시 `border-radius: var(--rounded-full)` (pill shape) — 직각 버튼 금지
+- **카드**: `border-radius: var(--rounded-xl)` (16px) + `border: 1px solid var(--color-hairline)`
+- **뱃지/pill**: `border-radius: var(--rounded-full)`
+- **그림자**: 카드는 `rgba(0,0,0,0.04) 0px 1px 2px 0px` (flat 기본), 모달은 `rgba(36,36,36,0.12) 0px 12px 24px -4px`
+- **브랜드 코랄 사용 범위**: 프로그레스 바, NEW 뱃지, 버전 칩 dot에만 한정 — 일반 버튼·배경에 사용 금지
 
 ---
 
@@ -86,8 +124,10 @@ git push origin main
 ## 파일별 주의사항
 
 ### index.html
-- 약 750줄의 단일 파일. CSS·JS 모두 인라인 포함.
+- 약 1000줄의 단일 파일. CSS·JS 모두 인라인 포함.
 - 편집 시 Read 도구로 전체 파일을 읽지 말고, grep/offset으로 필요한 부분만 읽는다.
+- **버전 칩**: `<button class="ver-chip">` — 화면 좌측 하단 fixed 위치에 항상 표시. 클릭 시 `.ver-modal-overlay`를 `.open` 클래스로 활성화해 모달 표시.
+- **버전 모달**: JS 내 `VERSION_HISTORY` 배열을 `renderVerModal()`이 동적으로 렌더링. 버전 추가 시 해당 배열 맨 앞에 항목을 추가하면 된다.
 
 ### version-history.json
 - `currentVersion`: 현재 버전 문자열
