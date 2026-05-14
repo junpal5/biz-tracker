@@ -709,7 +709,7 @@
 <!-- ── Version Chip ── -->
 <button class="ver-chip" id="verChip" onclick="openVerModal()">
   <span class="ver-chip-dot"></span>
-  v2.3.0
+  v2.3.2
 </button>
 
 <!-- ── Version Modal ── -->
@@ -848,9 +848,16 @@
 /* ════════════════════════════════════
    Version Chip & Modal
    ════════════════════════════════════ */
-const CURRENT_VERSION = '2.3.1';
+const CURRENT_VERSION = '2.3.2';
 
 const VERSION_HISTORY = [
+  {
+    version: '2.3.2',
+    date: '2026-05-14',
+    changes: [
+      '접속 시 매번 비밀번호 재입력 필수 — localStorage 인증 저장 제거',
+    ]
+  },
   {
     version: '2.3.1',
     date: '2026-05-13',
@@ -1389,14 +1396,9 @@ function esc(str) {
 /* ════════════════════════════════════
    Login
    ════════════════════════════════════ */
-const LOGIN_KEY = 'biz_auth';
 const LOGIN_PWD = 'gallup1974';
 
 (function initLogin() {
-  if (localStorage.getItem(LOGIN_KEY) === '1') {
-    document.getElementById('loginScreen').style.display = 'none';
-    return;
-  }
   document.getElementById('loginPwd').addEventListener('keydown', e => {
     if (e.key === 'Enter') submitLogin();
   });
@@ -1406,7 +1408,6 @@ function submitLogin() {
   const pwd   = document.getElementById('loginPwd').value;
   const errEl = document.getElementById('loginError');
   if (pwd === LOGIN_PWD) {
-    localStorage.setItem(LOGIN_KEY, '1');
     document.getElementById('loginScreen').style.display = 'none';
   } else {
     errEl.style.display = 'block';
